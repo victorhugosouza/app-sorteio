@@ -13,13 +13,13 @@ TOTAL_NUMEROS = 50
 
 # Mapeamento fixo de nomes para os números definidos
 MAPEAMENTO_PONTUADO = {
-    "Adelaine": 1,
-    "Grazi": 2,
-    "Barbara": 3,
-    "Maria": 4,
-    "Joyce": 5,
-    "Victor": 7,
-    "Thiago": 11
+    "1": 1,
+    "2": 2,
+    "3": 3,
+    "4": 4,
+    "5": 5,
+    "7": 7,
+    "11": 11
 }
 
 # Inicialização dos estados na sessão

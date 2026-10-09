@@ -51,7 +51,7 @@ def aplicar_estilo():
             padding: 2rem 2rem 1.5rem;
             max-width: 720px;
         }}
-        .titulo {{
+        .stMarkdown .titulo {{
             font-family: 'Fredoka', sans-serif;
             font-weight: 700;
             font-size: 3rem;
@@ -60,7 +60,7 @@ def aplicar_estilo():
             line-height: 1.1;
             margin: 0;
         }}
-        .subtitulo {{
+        .stMarkdown .subtitulo {{
             font-family: 'Fredoka', sans-serif;
             color: #B8892B;
             text-align: center;
@@ -77,6 +77,19 @@ def aplicar_estilo():
             padding: 0.6rem 0;
         }}
         .stButton > button:hover {{ background: #B81322; }}
+
+        /* Celular */
+        @media (max-width: 640px) {{
+            .stApp {{ background-attachment: scroll; }}
+            .block-container {{
+                margin: 0.75rem 0.5rem 0;
+                padding: 1.25rem 1rem 1rem;
+                border-radius: 20px;
+            }}
+            .stMarkdown .titulo {{ font-size: 2.2rem; }}
+            .stMarkdown .subtitulo {{ font-size: 0.75rem; letter-spacing: 0.18em; }}
+            .stButton > button {{ font-size: 1.15rem; }}
+        }}
         </style>
         """,
         unsafe_allow_html=True,
@@ -92,7 +105,7 @@ def roleta_html(numero_alvo, nome, giro_id):
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&display=swap" rel="stylesheet">
 <style>
   body {{ margin: 0; font-family: 'Fredoka', sans-serif; text-align: center; background: transparent; }}
-  .wrap {{ position: relative; width: 420px; max-width: 100%; margin: 0 auto; }}
+  .wrap {{ position: relative; width: 420px; max-width: 92vw; margin: 0 auto; padding-top: 4px; }}
   canvas {{ width: 100%; height: auto; display: block; }}
   .ponteiro {{
     position: absolute; top: -6px; left: 50%; transform: translateX(-50%);
@@ -200,8 +213,9 @@ if st.button("🎰 Girar Roleta!", type="primary", width="stretch"):
     numero, nome = sortear(ganhador_selecionado)
     st.session_state.giro = {"numero": numero, "nome": nome, "id": time.time()}
 
+# Altura automática: acompanha o tamanho da roleta na tela (celular ou PC)
 giro = st.session_state.get("giro")
 if giro:
-    st.iframe(roleta_html(giro["numero"], giro["nome"], giro["id"]), height=600)
+    st.iframe(roleta_html(giro["numero"], giro["nome"], giro["id"]), height="content")
 else:
-    st.iframe(roleta_html(None, "", 0), height=600)
+    st.iframe(roleta_html(None, "", 0), height="content")

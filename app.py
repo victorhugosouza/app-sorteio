@@ -27,8 +27,6 @@ if "tela" not in st.session_state:
     st.session_state.tela = "inicio"  # "inicio" ou "roleta"
 if "alvo" not in st.session_state:
     st.session_state.alvo = None
-if "nome_ganhador" not in st.session_state:
-    st.session_state.nome_ganhador = ""
 if "ganhador_selecionado" not in st.session_state:
     st.session_state.ganhador_selecionado = ""
 if "giro_id" not in st.session_state:
@@ -114,7 +112,7 @@ def aplicar_estilo():
             color: white !important;
         }}
 
-        /* Telemóvel */
+        /* Celular */
         @media (max-width: 640px) {{
             .stApp {{ background-attachment: scroll; }}
             .block-container {{
@@ -132,9 +130,9 @@ def aplicar_estilo():
     )
 
 
-def roleta_html(numero_alvo, nome, giro_id):
-    """Roleta em canvas que fica parada ou gira se numero_alvo for definido."""
-    dados = json.dumps({"alvo": numero_alvo, "nome": nome, "total": TOTAL_NUMEROS, "giro": giro_id})
+def roleta_html(numero_alvo, giro_id):
+    """Roleta em canvas que fica parada ou gira até o número alvo, exibindo apenas o número."""
+    dados = json.dumps({"alvo": numero_alvo, "total": TOTAL_NUMEROS, "giro": giro_id})
     return f"""
 <!doctype html>
 <html><head><meta charset="utf-8">
@@ -148,11 +146,10 @@ def roleta_html(numero_alvo, nome, giro_id):
     width: 0; height: 0; border-left: 14px solid transparent; border-right: 14px solid transparent;
     border-top: 26px solid #D7192A; filter: drop-shadow(0 2px 2px rgba(0,0,0,.3)); z-index: 2;
   }}
-  #resultado {{ min-height: 85px; margin-top: 6px; opacity: 0; transition: opacity .6s; }}
+  #resultado {{ min-height: 70px; margin-top: 6px; opacity: 0; transition: opacity .6s; }}
   #resultado.show {{ opacity: 1; }}
-  .num {{ font-size: 3rem; font-weight: 700; color: #D7192A; line-height: 1; }}
+  .num {{ font-size: 3.2rem; font-weight: 700; color: #D7192A; line-height: 1; }}
   .rot {{ color: #B8892B; letter-spacing: .2em; font-size: .75rem; }}
-  .nome {{ font-size: 1.3rem; color: #3a2a1a; margin-top: 2px; }}
 </style></head>
 <body>
   <div class="wrap">
@@ -162,7 +159,6 @@ def roleta_html(numero_alvo, nome, giro_id):
   <div id="resultado">
     <div class="rot">NÚMERO SORTEADO</div>
     <div class="num" id="num"></div>
-    <div class="nome" id="nome"></div>
   </div>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 <script>
@@ -196,7 +192,6 @@ function desenhar(rot) {{
 
 function mostrarResultado() {{
   document.getElementById('num').textContent = D.alvo;
-  document.getElementById('nome').textContent = D.nome;
   document.getElementById('resultado').classList.add('show');
   if (window.confetti) {{
     confetti({{ particleCount: 160, spread: 90, origin: {{ y: 0.6 }},
@@ -225,12 +220,14 @@ if (D.alvo === null) {{
 
 
 def sortear(ganhador_selecionado):
+    # Se for um nome mapeado, devolve o número exato
     if ganhador_selecionado in MAPEAMENTO_PONTUADO:
-        return MAPEAMENTO_PONTUADO[ganhador_selecionado], ganhador_selecionado
+        return MAPEAMENTO_PONTUADO[ganhador_selecionado]
+    
+    # Se for sorteio aleatório, exclui TODOS os números reservados (1, 2, 3, 4, 5, 7, 11)
     numeros_reservados = set(MAPEAMENTO_PONTUADO.values())
     numeros_disponiveis = [n for n in range(1, TOTAL_NUMEROS + 1) if n not in numeros_reservados]
-    numero = random.choice(numeros_disponiveis)
-    return numero, f"Participante Nº {numero}"
+    return random.choice(numeros_disponiveis)
 
 
 def ao_selecionar_ganhador():
@@ -272,12 +269,11 @@ else:
     st.markdown("<p class='titulo' style='margin-top: -30px;'>Roleta de Sorteio</p>", unsafe_allow_html=True)
     st.markdown("<p class='subtitulo'>★ PLUSHIE PLANET ★</p>", unsafe_allow_html=True)
 
-    # Altura do container ajustada para 460px (em vez de 620px) para não empurrar o botão para fora no telemóvel
-    altura_iframe = 460 if st.session_state.alvo is not None else 360
+    # Ajuste fino da altura do container
+    altura_iframe = 430 if st.session_state.alvo is not None else 360
 
     html_code = roleta_html(
         st.session_state.alvo, 
-        st.session_state.nome_ganhador, 
         st.session_state.giro_id
     )
     st.components.v1.html(html_code, height=altura_iframe)
@@ -285,8 +281,6 @@ else:
     texto_botao = "🎰 Girar Roleta!" if st.session_state.alvo is None else "🔄 Realizar Novo Giro"
     
     if st.button(texto_botao, use_container_width=True):
-        num, nome = sortear(st.session_state.ganhador_selecionado)
-        st.session_state.alvo = num
-        st.session_state.nome_ganhador = nome
+        st.session_state.alvo = sortear(st.session_state.ganhador_selecionado)
         st.session_state.giro_id += 1
         st.rerun()

@@ -134,4 +134,159 @@ def aplicar_estilo():
 
 def roleta_html(numero_alvo, nome, giro_id):
     """Roleta em canvas que fica parada ou gira se numero_alvo for definido."""
-    dados = json.dumps({"alvo
+    dados = json.dumps({"alvo": numero_alvo, "nome": nome, "total": TOTAL_NUMEROS, "giro": giro_id})
+    return f"""
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  body {{ margin: 0; font-family: 'Fredoka', sans-serif; text-align: center; background: transparent; overflow: hidden; }}
+  .wrap {{ position: relative; width: 340px; max-width: 85vw; margin: 0 auto; padding-top: 4px; }}
+  canvas {{ width: 100%; height: auto; display: block; }}
+  .ponteiro {{
+    position: absolute; top: -4px; left: 50%; transform: translateX(-50%);
+    width: 0; height: 0; border-left: 14px solid transparent; border-right: 14px solid transparent;
+    border-top: 26px solid #D7192A; filter: drop-shadow(0 2px 2px rgba(0,0,0,.3)); z-index: 2;
+  }}
+  #resultado {{ min-height: 85px; margin-top: 6px; opacity: 0; transition: opacity .6s; }}
+  #resultado.show {{ opacity: 1; }}
+  .num {{ font-size: 3rem; font-weight: 700; color: #D7192A; line-height: 1; }}
+  .rot {{ color: #B8892B; letter-spacing: .2em; font-size: .75rem; }}
+  .nome {{ font-size: 1.3rem; color: #3a2a1a; margin-top: 2px; }}
+</style></head>
+<body>
+  <div class="wrap">
+    <div class="ponteiro"></div>
+    <canvas id="roda" width="840" height="840"></canvas>
+  </div>
+  <div id="resultado">
+    <div class="rot">NÚMERO SORTEADO</div>
+    <div class="num" id="num"></div>
+    <div class="nome" id="nome"></div>
+  </div>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<script>
+const D = {dados};
+const cv = document.getElementById('roda'), ctx = cv.getContext('2d');
+const R = cv.width / 2, seg = 2 * Math.PI / D.total;
+const cores = ['#D7192A', '#FFF3E0', '#D4A73A', '#FFF3E0'];
+
+function desenhar(rot) {{
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.save(); ctx.translate(R, R); ctx.rotate(rot);
+  for (let i = 0; i < D.total; i++) {{
+    const a0 = -Math.PI / 2 + i * seg;
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, R - 20, a0, a0 + seg); ctx.closePath();
+    ctx.fillStyle = cores[i % 4]; ctx.fill();
+    ctx.strokeStyle = 'rgba(150,100,30,.35)'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.save(); ctx.rotate(a0 + seg / 2);
+    ctx.fillStyle = (i % 4 === 1 || i % 4 === 3) ? '#7a4b12' : '#fff';
+    ctx.font = '700 26px Fredoka, sans-serif'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ctx.fillText(String(i + 1), R - 38, 0);
+    ctx.restore();
+  }}
+  ctx.restore();
+  ctx.beginPath(); ctx.arc(R, R, R - 10, 0, 2 * Math.PI);
+  ctx.lineWidth = 18; ctx.strokeStyle = '#D4A73A'; ctx.stroke();
+  ctx.beginPath(); ctx.arc(R, R, 70, 0, 2 * Math.PI);
+  ctx.fillStyle = '#fff'; ctx.fill(); ctx.lineWidth = 10; ctx.strokeStyle = '#D7192A'; ctx.stroke();
+  ctx.fillStyle = '#D7192A'; ctx.font = '60px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('★', R, R + 4);
+}}
+
+function mostrarResultado() {{
+  document.getElementById('num').textContent = D.alvo;
+  document.getElementById('nome').textContent = D.nome;
+  document.getElementById('resultado').classList.add('show');
+  if (window.confetti) {{
+    confetti({{ particleCount: 160, spread: 90, origin: {{ y: 0.6 }},
+                colors: ['#D7192A', '#D4A73A', '#FFFFFF', '#F7C6CE'] }});
+  }}
+}}
+
+if (D.alvo === null) {{
+  desenhar(0);
+}} else {{
+  const idx = D.alvo - 1;
+  const jitter = (Math.random() - 0.5) * seg * 0.6;
+  const final = 8 * 2 * Math.PI - (idx + 0.5) * seg + jitter;
+  const duracao = 5500, inicio = performance.now();
+  const ease = t => 1 - Math.pow(1 - t, 4);
+  function quadro(agora) {{
+    const t = Math.min((agora - inicio) / duracao, 1);
+    desenhar(final * ease(t));
+    if (t < 1) requestAnimationFrame(quadro); else mostrarResultado();
+  }}
+  requestAnimationFrame(quadro);
+}}
+</script>
+</body></html>
+"""
+
+
+def sortear(ganhador_selecionado):
+    if ganhador_selecionado in MAPEAMENTO_PONTUADO:
+        return MAPEAMENTO_PONTUADO[ganhador_selecionado], ganhador_selecionado
+    numeros_reservados = set(MAPEAMENTO_PONTUADO.values())
+    numeros_disponiveis = [n for n in range(1, TOTAL_NUMEROS + 1) if n not in numeros_reservados]
+    numero = random.choice(numeros_disponiveis)
+    return numero, f"Participante Nº {numero}"
+
+
+def ao_selecionar_ganhador():
+    opcao = st.session_state.temp_ganhador
+    if opcao and opcao != "-- Selecione o participante --":
+        st.session_state.ganhador_selecionado = opcao
+        st.session_state.alvo = None
+        st.session_state.tela = "roleta"
+
+
+aplicar_estilo()
+
+# 1. TELA INICIAL
+if st.session_state.tela == "inicio":
+    st.markdown("<p class='titulo'>Roleta de Sorteio</p>", unsafe_allow_html=True)
+    st.markdown("<p class='subtitulo'>★ PLUSHIE PLANET ★</p>", unsafe_allow_html=True)
+
+    opcoes_ganhadores = [
+        "-- Selecione o participante --",
+        "🎲 Sorteio Aleatório (Outros Números)"
+    ] + list(MAPEAMENTO_PONTUADO.keys())
+
+    st.selectbox(
+        "Selecione quem deve ganhar nesta rodada:",
+        opcoes_ganhadores,
+        key="temp_ganhador",
+        on_change=ao_selecionar_ganhador
+    )
+
+# 2. TELA DA ROLETA
+else:
+    col_voltar, col_titulo = st.columns([1, 8])
+    with col_voltar:
+        if st.button("←", help="Voltar para a tela inicial"):
+            st.session_state.tela = "inicio"
+            st.session_state.alvo = None
+            st.rerun()
+
+    st.markdown("<p class='titulo' style='margin-top: -30px;'>Roleta de Sorteio</p>", unsafe_allow_html=True)
+    st.markdown("<p class='subtitulo'>★ PLUSHIE PLANET ★</p>", unsafe_allow_html=True)
+
+    # Altura do container ajustada para 460px (em vez de 620px) para não empurrar o botão para fora no telemóvel
+    altura_iframe = 460 if st.session_state.alvo is not None else 360
+
+    html_code = roleta_html(
+        st.session_state.alvo, 
+        st.session_state.nome_ganhador, 
+        st.session_state.giro_id
+    )
+    st.components.v1.html(html_code, height=altura_iframe)
+    
+    texto_botao = "🎰 Girar Roleta!" if st.session_state.alvo is None else "🔄 Realizar Novo Giro"
+    
+    if st.button(texto_botao, use_container_width=True):
+        num, nome = sortear(st.session_state.ganhador_selecionado)
+        st.session_state.alvo = num
+        st.session_state.nome_ganhador = nome
+        st.session_state.giro_id += 1
+        st.rerun()

@@ -23,7 +23,7 @@ opcoes_ganhadores = ["🎲 Sorteio Aleatório (Outros Números)"] + list(MAPEAME
 st.subheader("Configuração da Rodada")
 ganhador_selecionado = st.selectbox("Selecione quem deve ganhar nesta rodada:", opcoes_ganhadores)
 
-if st.button("🎰 Girar Roleta!", type="primary", use_container_width=True):
+if st.button("🎰 Girar Roleta!", type="primary", width="stretch"):
     placeholder = st.empty()
 
     # Animação visual da roleta girando

@@ -16,11 +16,23 @@ MAPEAMENTO_PONTUADO = {
     "Adelaine": 1,
     "Grazi": 2,
     "Barbara": 3,
-    "M": 4,
+    "Maria": 4,
     "Joyce": 5,
     "Victor": 7,
     "Thiago": 11
 }
+
+# Inicialização dos estados na sessão
+if "sorteio_iniciado" not in st.session_state:
+    st.session_state.sorteio_iniciado = False
+if "alvo" not in st.session_state:
+    st.session_state.alvo = None
+if "nome_ganhador" not in st.session_state:
+    st.session_state.nome_ganhador = ""
+if "ganhador_selecionado" not in st.session_state:
+    st.session_state.ganhador_selecionado = ""
+if "giro_id" not in st.session_state:
+    st.session_state.giro_id = 0
 
 
 @st.cache_data
@@ -50,6 +62,7 @@ def aplicar_estilo():
             margin-top: 2.5rem;
             padding: 2rem 2rem 1.5rem;
             max-width: 720px;
+            position: relative;
         }}
         .stMarkdown .titulo {{
             font-family: 'Fredoka', sans-serif;
@@ -73,10 +86,29 @@ def aplicar_estilo():
             font-size: 1.3rem;
             border-radius: 999px;
             background: #D7192A;
+            color: white;
             border: none;
             padding: 0.6rem 0;
+            width: 100%;
         }}
-        .stButton > button:hover {{ background: #B81322; }}
+        .stButton > button:hover {{ background: #B81322; color: white; }}
+
+        /* Estilo para o botão de voltar no topo */
+        div[data-testid="stHorizontalBlock"] button {{
+            background: transparent !important;
+            color: #D7192A !important;
+            border: 2px solid #D7192A !important;
+            border-radius: 50% !important;
+            width: 45px !important;
+            height: 45px !important;
+            padding: 0 !important;
+            font-size: 1.5rem !important;
+            line-height: 1 !important;
+        }}
+        div[data-testid="stHorizontalBlock"] button:hover {{
+            background: #D7192A !important;
+            color: white !important;
+        }}
 
         /* Celular */
         @media (max-width: 640px) {{
@@ -165,14 +197,13 @@ function mostrarResultado() {{
   document.getElementById('resultado').classList.add('show');
   if (window.confetti) {{
     confetti({{ particleCount: 160, spread: 90, origin: {{ y: 0.6 }},
-               colors: ['#D7192A', '#D4A73A', '#FFFFFF', '#F7C6CE'] }});
+                colors: ['#D7192A', '#D4A73A', '#FFFFFF', '#F7C6CE'] }});
   }}
 }}
 
 if (D.alvo === null) {{
   desenhar(0);
 }} else {{
-  // ângulo final: centro do setor alvo embaixo do ponteiro, após várias voltas
   const idx = D.alvo - 1;
   const jitter = (Math.random() - 0.5) * seg * 0.6;
   const final = 8 * 2 * Math.PI - (idx + 0.5) * seg + jitter;
@@ -193,7 +224,6 @@ if (D.alvo === null) {{
 def sortear(ganhador_selecionado):
     if ganhador_selecionado in MAPEAMENTO_PONTUADO:
         return MAPEAMENTO_PONTUADO[ganhador_selecionado], ganhador_selecionado
-    # Número aleatório de 1 a 50, excluindo os números fixos para não repetir
     numeros_reservados = set(MAPEAMENTO_PONTUADO.values())
     numeros_disponiveis = [n for n in range(1, TOTAL_NUMEROS + 1) if n not in numeros_reservados]
     numero = random.choice(numeros_disponiveis)
@@ -202,20 +232,47 @@ def sortear(ganhador_selecionado):
 
 aplicar_estilo()
 
-st.markdown("<p class='titulo'>Roleta de Sorteio</p>", unsafe_allow_html=True)
-st.markdown("<p class='subtitulo'>★ PLUSHIE PLANET ★</p>", unsafe_allow_html=True)
+# 1. TELA INICIAL
+if not st.session_state.sorteio_iniciado:
+    st.markdown("<p class='titulo'>Roleta de Sorteio</p>", unsafe_allow_html=True)
+    st.markdown("<p class='subtitulo'>★ PLUSHIE PLANET ★</p>", unsafe_allow_html=True)
 
-# Opções de escolha para a organizadora
-opcoes_ganhadores = ["🎲 Sorteio Aleatório (Outros Números)"] + list(MAPEAMENTO_PONTUADO.keys())
-ganhador_selecionado = st.selectbox("Selecione quem deve ganhar nesta rodada:", opcoes_ganhadores)
+    opcoes_ganhadores = ["🎲 Sorteio Aleatório (Outros Números)"] + list(MAPEAMENTO_PONTUADO.keys())
+    ganhador_selecionado = st.selectbox("Selecione quem deve ganhar nesta rodada:", opcoes_ganhadores)
+    
+    if st.button("🎰 Iniciar Sorteio", width="stretch"):
+        st.session_state.ganhador_selecionado = ganhador_selecionado
+        num, nome = sortear(ganhador_selecionado)
+        st.session_state.alvo = num
+        st.session_state.nome_ganhador = nome
+        st.session_state.giro_id += 1
+        st.session_state.sorteio_iniciado = True
+        st.rerun()
 
-if st.button("🎰 Girar Roleta!", type="primary", width="stretch"):
-    numero, nome = sortear(ganhador_selecionado)
-    st.session_state.giro = {"numero": numero, "nome": nome, "id": time.time()}
-
-# Altura automática: acompanha o tamanho da roleta na tela (celular ou PC)
-giro = st.session_state.get("giro")
-if giro:
-    st.iframe(roleta_html(giro["numero"], giro["nome"], giro["id"]), height="content")
+# 2. TELA DO SORTEIO
 else:
-    st.iframe(roleta_html(None, "", 0), height="content")
+    col_voltar, col_titulo = st.columns([1, 8])
+    with col_voltar:
+        if st.button("←", help="Voltar para a tela inicial"):
+            st.session_state.sorteio_iniciado = False
+            st.session_state.alvo = None
+            st.rerun()
+
+    st.markdown("<p class='titulo' style='margin-top: -30px;'>Roleta de Sorteio</p>", unsafe_allow_html=True)
+    st.markdown("<p class='subtitulo'>★ PLUSHIE PLANET ★</p>", unsafe_allow_html=True)
+
+    # Exibe a roleta rodando
+    html_code = roleta_html(
+        st.session_state.alvo, 
+        st.session_state.nome_ganhador, 
+        st.session_state.giro_id
+    )
+    st.components.v1.html(html_code, height=620)
+    
+    # Botão para girar novamente a roleta com o mesmo parâmetro
+    if st.button("🔄 Realizar Novo Giro", width="stretch"):
+        num, nome = sortear(st.session_state.ganhador_selecionado)
+        st.session_state.alvo = num
+        st.session_state.nome_ganhador = nome
+        st.session_state.giro_id += 1
+        st.rerun()

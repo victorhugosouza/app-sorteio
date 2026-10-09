@@ -23,8 +23,8 @@ MAPEAMENTO_PONTUADO = {
 }
 
 # Inicialização dos estados na sessão
-if "sorteio_iniciado" not in st.session_state:
-    st.session_state.sorteio_iniciado = False
+if "tela" not in st.session_state:
+    st.session_state.tela = "inicio"  # "inicio" ou "roleta"
 if "alvo" not in st.session_state:
     st.session_state.alvo = None
 if "nome_ganhador" not in st.session_state:
@@ -81,6 +81,8 @@ def aplicar_estilo():
             font-size: 0.9rem;
             margin: 0.4rem 0 0.5rem;
         }}
+
+        /* Estilo padrão para o botão principal de girar/sortear */
         .stButton > button {{
             font-family: 'Fredoka', sans-serif;
             font-size: 1.3rem;
@@ -88,13 +90,13 @@ def aplicar_estilo():
             background: #D7192A;
             color: white;
             border: none;
-            padding: 0.6rem 0;
-            width: 100%;
+            padding: 0.75rem 0;
+            width: 100% !important;
         }}
         .stButton > button:hover {{ background: #B81322; color: white; }}
 
-        /* Estilo para o botão de voltar no topo */
-        div[data-testid="stHorizontalBlock"] button {{
+        /* Estilo exclusivo para o botão de voltar no topo */
+        div[data-testid="stColumn"]:first-child button {{
             background: transparent !important;
             color: #D7192A !important;
             border: 2px solid #D7192A !important;
@@ -104,8 +106,9 @@ def aplicar_estilo():
             padding: 0 !important;
             font-size: 1.5rem !important;
             line-height: 1 !important;
+            margin-bottom: 0px !important;
         }}
-        div[data-testid="stHorizontalBlock"] button:hover {{
+        div[data-testid="stColumn"]:first-child button:hover {{
             background: #D7192A !important;
             color: white !important;
         }}
@@ -129,7 +132,7 @@ def aplicar_estilo():
 
 
 def roleta_html(numero_alvo, nome, giro_id):
-    """Roleta em canvas que gira até o número alvo e mostra o resultado embaixo."""
+    """Roleta em canvas que fica parada ou gira se numero_alvo for definido."""
     dados = json.dumps({"alvo": numero_alvo, "nome": nome, "total": TOTAL_NUMEROS, "giro": giro_id})
     return f"""
 <!doctype html>
@@ -202,8 +205,10 @@ function mostrarResultado() {{
 }}
 
 if (D.alvo === null) {{
+  // Exibe a roleta parada
   desenhar(0);
 }} else {{
+  // Realiza o giro até o alvo
   const idx = D.alvo - 1;
   const jitter = (Math.random() - 0.5) * seg * 0.6;
   const final = 8 * 2 * Math.PI - (idx + 0.5) * seg + jitter;
@@ -230,38 +235,46 @@ def sortear(ganhador_selecionado):
     return numero, f"Participante Nº {numero}"
 
 
+def ao_selecionar_ganhador():
+    opcao = st.session_state.temp_ganhador
+    if opcao and opcao != "-- Selecione o participante --":
+        st.session_state.ganhador_selecionado = opcao
+        st.session_state.alvo = None  # Reseta o alvo para a roleta ficar parada inicialmente
+        st.session_state.tela = "roleta"
+
+
 aplicar_estilo()
 
 # 1. TELA INICIAL
-if not st.session_state.sorteio_iniciado:
+if st.session_state.tela == "inicio":
     st.markdown("<p class='titulo'>Roleta de Sorteio</p>", unsafe_allow_html=True)
     st.markdown("<p class='subtitulo'>★ PLUSHIE PLANET ★</p>", unsafe_allow_html=True)
 
-    opcoes_ganhadores = ["🎲 Sorteio Aleatório (Outros Números)"] + list(MAPEAMENTO_PONTUADO.keys())
-    ganhador_selecionado = st.selectbox("Selecione quem deve ganhar nesta rodada:", opcoes_ganhadores)
-    
-    if st.button("🎰 Iniciar Sorteio", width="stretch"):
-        st.session_state.ganhador_selecionado = ganhador_selecionado
-        num, nome = sortear(ganhador_selecionado)
-        st.session_state.alvo = num
-        st.session_state.nome_ganhador = nome
-        st.session_state.giro_id += 1
-        st.session_state.sorteio_iniciado = True
-        st.rerun()
+    opcoes_ganhadores = [
+        "-- Selecione o participante --",
+        "🎲 Sorteio Aleatório (Outros Números)"
+    ] + list(MAPEAMENTO_PONTUADO.keys())
 
-# 2. TELA DO SORTEIO
+    st.selectbox(
+        "Selecione quem deve ganhar nesta rodada:",
+        opcoes_ganhadores,
+        key="temp_ganhador",
+        on_change=ao_selecionar_ganhador
+    )
+
+# 2. TELA DA ROLETA
 else:
     col_voltar, col_titulo = st.columns([1, 8])
     with col_voltar:
         if st.button("←", help="Voltar para a tela inicial"):
-            st.session_state.sorteio_iniciado = False
+            st.session_state.tela = "inicio"
             st.session_state.alvo = None
             st.rerun()
 
     st.markdown("<p class='titulo' style='margin-top: -30px;'>Roleta de Sorteio</p>", unsafe_allow_html=True)
     st.markdown("<p class='subtitulo'>★ PLUSHIE PLANET ★</p>", unsafe_allow_html=True)
 
-    # Exibe a roleta rodando
+    # Exibe a roleta (parada até clicar no botão)
     html_code = roleta_html(
         st.session_state.alvo, 
         st.session_state.nome_ganhador, 
@@ -269,8 +282,10 @@ else:
     )
     st.components.v1.html(html_code, height=620)
     
-    # Botão para girar novamente a roleta com o mesmo parâmetro
-    if st.button("🔄 Realizar Novo Giro", width="stretch"):
+    # Botão para disparar o giro da roleta (expandido e em destaque)
+    texto_botao = "🎰 Girar Roleta!" if st.session_state.alvo is None else "🔄 Realizar Novo Giro"
+    
+    if st.button(texto_botao, use_container_width=True):
         num, nome = sortear(st.session_state.ganhador_selecionado)
         st.session_state.alvo = num
         st.session_state.nome_ganhador = nome

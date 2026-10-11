@@ -9,17 +9,19 @@ import streamlit as st
 st.set_page_config(page_title="Roleta de Sorteio", page_icon="🎰", layout="centered")
 
 PASTA = Path(__file__).parent
-TOTAL_NUMEROS = 50
+TOTAL_NUMEROS = 40  # Atualizado para 40 números
 
-# Mapeamento fixo de nomes para os números definidos
+# Mapeamento fixo de opções para os números definidos
 MAPEAMENTO_PONTUADO = {
     "1": 1,
     "2": 2,
     "3": 3,
     "4": 4,
     "5": 5,
+    "6": 6,
     "7": 7,
-    "11": 11
+    "15": 15,
+    "20": 20
 }
 
 # Inicialização dos estados na sessão
@@ -204,9 +206,14 @@ if (D.alvo === null) {{
 }} else {{
   const idx = D.alvo - 1;
   const jitter = (Math.random() - 0.5) * seg * 0.6;
-  const final = 8 * 2 * Math.PI - (idx + 0.5) * seg + jitter;
-  const duracao = 5500, inicio = performance.now();
+  
+  // Aumentado o número de voltas (12 a 16 voltas completas) para dar uma animação mais longa e variada
+  const voltas = 12 + Math.floor(Math.random() * 5);
+  const final = voltas * 2 * Math.PI - (idx + 0.5) * seg + jitter;
+  
+  const duracao = 6500, inicio = performance.now();
   const ease = t => 1 - Math.pow(1 - t, 4);
+  
   function quadro(agora) {{
     const t = Math.min((agora - inicio) / duracao, 1);
     desenhar(final * ease(t));
@@ -220,13 +227,15 @@ if (D.alvo === null) {{
 
 
 def sortear(ganhador_selecionado):
-    # Se for um nome mapeado, devolve o número exato
+    # Se for um número do mapeamento fixo, devolve ele diretamente
     if ganhador_selecionado in MAPEAMENTO_PONTUADO:
         return MAPEAMENTO_PONTUADO[ganhador_selecionado]
     
-    # Se for sorteio aleatório, exclui TODOS os números reservados (1, 2, 3, 4, 5, 7, 11)
+    # Se for sorteio aleatório, exclui TODOS os números do mapeamento (1, 2, 3, 4, 5, 6, 7, 8, 15, 20)
     numeros_reservados = set(MAPEAMENTO_PONTUADO.values())
     numeros_disponiveis = [n for n in range(1, TOTAL_NUMEROS + 1) if n not in numeros_reservados]
+    
+    # Seleção aleatória garantida entre os números restantes
     return random.choice(numeros_disponiveis)
 
 
@@ -269,7 +278,6 @@ else:
     st.markdown("<p class='titulo' style='margin-top: -30px;'>Roleta de Sorteio</p>", unsafe_allow_html=True)
     st.markdown("<p class='subtitulo'>★ PLUSHIE PLANET ★</p>", unsafe_allow_html=True)
 
-    # Ajuste fino da altura do container
     altura_iframe = 430 if st.session_state.alvo is not None else 360
 
     html_code = roleta_html(

@@ -21,7 +21,9 @@ MAPEAMENTO_PONTUADO = {
     "6": 6,
     "7": 7,
     "15": 15,
-    "20": 20
+    "20": 20,
+    "23": 23,
+    "25": 25
 }
 
 # Inicialização dos estados na sessão
@@ -231,7 +233,7 @@ def sortear(ganhador_selecionado):
     if ganhador_selecionado in MAPEAMENTO_PONTUADO:
         return MAPEAMENTO_PONTUADO[ganhador_selecionado]
     
-    # Se for sorteio aleatório, exclui TODOS os números do mapeamento (1, 2, 3, 4, 5, 6, 7, 15, 20)
+    # Se for sorteio aleatório, exclui TODOS os números do mapeamento (1, 2, 3, 4, 5, 6, 7, 15, 20, 23, 25) e sorteia entre os restantes
     numeros_reservados = set(MAPEAMENTO_PONTUADO.values())
     numeros_disponiveis = [n for n in range(1, TOTAL_NUMEROS + 1) if n not in numeros_reservados]
     

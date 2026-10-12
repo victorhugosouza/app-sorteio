@@ -1,6 +1,7 @@
 import base64
 import json
 import random
+import secrets
 import time
 from pathlib import Path
 
@@ -9,7 +10,7 @@ import streamlit as st
 st.set_page_config(page_title="Roleta de Sorteio", page_icon="🎰", layout="centered")
 
 PASTA = Path(__file__).parent
-TOTAL_NUMEROS = 50  # Atualizado para 50 números
+TOTAL_NUMEROS = 50
 
 # Mapeamento fixo de opções para os números definidos
 MAPEAMENTO_PONTUADO = {
@@ -28,13 +29,15 @@ MAPEAMENTO_PONTUADO = {
 
 # Inicialização dos estados na sessão
 if "tela" not in st.session_state:
-    st.session_state.tela = "inicio"  # "inicio" ou "roleta"
+    st.session_state.tela = "inicio"
 if "alvo" not in st.session_state:
     st.session_state.alvo = None
 if "ganhador_selecionado" not in st.session_state:
     st.session_state.ganhador_selecionado = ""
 if "giro_id" not in st.session_state:
     st.session_state.giro_id = 0
+if "sorteados_aleatorios" not in st.session_state:
+    st.session_state.sorteados_aleatorios = []
 
 
 @st.cache_data
@@ -181,7 +184,7 @@ function desenhar(rot) {{
     ctx.strokeStyle = 'rgba(150,100,30,.35)'; ctx.lineWidth = 2; ctx.stroke();
     ctx.save(); ctx.rotate(a0 + seg / 2);
     ctx.fillStyle = (i % 4 === 1 || i % 4 === 3) ? '#7a4b12' : '#fff';
-    ctx.font = '700 26px Fredoka, sans-serif'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ctx.font = '700 24px Fredoka, sans-serif'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
     ctx.fillText(String(i + 1), R - 38, 0);
     ctx.restore();
   }}
@@ -209,8 +212,8 @@ if (D.alvo === null) {{
   const idx = D.alvo - 1;
   const jitter = (Math.random() - 0.5) * seg * 0.6;
   
-  // Aumentado o número de voltas (12 a 16 voltas completas) para dar uma animação mais longa e variada
-  const voltas = 12 + Math.floor(Math.random() * 5);
+  // Variação de giros randômicos (10 a 15 voltas)
+  const voltas = 10 + Math.floor(Math.random() * 6);
   const final = voltas * 2 * Math.PI - (idx + 0.5) * seg + jitter;
   
   const duracao = 6500, inicio = performance.now();
@@ -229,16 +232,34 @@ if (D.alvo === null) {{
 
 
 def sortear(ganhador_selecionado):
-    # Se for um número do mapeamento fixo, devolve ele diretamente
+    # Retorna o número mapeado caso seja uma opção fixa
     if ganhador_selecionado in MAPEAMENTO_PONTUADO:
         return MAPEAMENTO_PONTUADO[ganhador_selecionado]
     
-    # Se for sorteio aleatório, exclui TODOS os números do mapeamento (1, 2, 3, 4, 5, 6, 7, 15, 20, 23, 25) e sorteia entre os restantes
-    numeros_reservados = set(MAPEAMENTO_PONTUADO.values())
-    numeros_disponiveis = [n for n in range(1, TOTAL_NUMEROS + 1) if n not in numeros_reservados]
+    # Reinicia a semente com base em tempo em nanossegundos
+    random.seed(time.time_ns())
     
-    # Seleção aleatória garantida entre os números restantes
-    return random.choice(numeros_disponiveis)
+    # Exclui os números mapeados
+    numeros_reservados = set(MAPEAMENTO_PONTUADO.values())
+    
+    # Filtra os números válidos de 1 a 50 excluindo os já sorteados na rodada
+    numeros_disponiveis = [
+        n for n in range(1, TOTAL_NUMEROS + 1) 
+        if n not in numeros_reservados and n not in st.session_state.sorteados_aleatorios
+    ]
+    
+    # Se todos os números livres já tiverem sido sorteados, limpa o histórico aleatório
+    if not numeros_disponiveis:
+        st.session_state.sorteados_aleatorios = []
+        numeros_disponiveis = [
+            n for n in range(1, TOTAL_NUMEROS + 1) 
+            if n not in numeros_reservados
+        ]
+    
+    # Escolha imprevista via gerador criptográfico
+    escolhido = secrets.choice(numeros_disponiveis)
+    st.session_state.sorteados_aleatorios.append(escolhido)
+    return escolhido
 
 
 def ao_selecionar_ganhador():

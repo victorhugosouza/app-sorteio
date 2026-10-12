@@ -9,7 +9,7 @@ import streamlit as st
 st.set_page_config(page_title="Roleta de Sorteio", page_icon="🎰", layout="centered")
 
 PASTA = Path(__file__).parent
-TOTAL_NUMEROS = 40  # Atualizado para 40 números
+TOTAL_NUMEROS = 50  # Atualizado para 50 números
 
 # Mapeamento fixo de opções para os números definidos
 MAPEAMENTO_PONTUADO = {
@@ -231,7 +231,7 @@ def sortear(ganhador_selecionado):
     if ganhador_selecionado in MAPEAMENTO_PONTUADO:
         return MAPEAMENTO_PONTUADO[ganhador_selecionado]
     
-    # Se for sorteio aleatório, exclui TODOS os números do mapeamento (1, 2, 3, 4, 5, 6, 7, 8, 15, 20)
+    # Se for sorteio aleatório, exclui TODOS os números do mapeamento (1, 2, 3, 4, 5, 6, 7, 15, 20)
     numeros_reservados = set(MAPEAMENTO_PONTUADO.values())
     numeros_disponiveis = [n for n in range(1, TOTAL_NUMEROS + 1) if n not in numeros_reservados]
     

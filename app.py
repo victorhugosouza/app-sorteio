@@ -14,17 +14,17 @@ TOTAL_NUMEROS = 50
 
 # Mapeamento fixo de opções para os números definidos
 MAPEAMENTO_PONTUADO = {
-    "1": 1,
-    "2": 2,
-    "3": 3,
-    "4": 4,
-    "5": 5,
-    "6": 6,
-    "7": 7,
-    "15": 15,
-    "20": 20,
-    "23": 23,
-    "25": 25
+    "1": 1, #Adelaine
+    "2": 2, #Grazielli
+    "3": 3, #Barbara
+    "4": 4, #Victor
+    "5": 5, #Marcia
+    "6": 6, #Andreia
+    "7": 7, #Evandro
+    "15": 15, #Joicy
+    "20": 20, #Maria M
+    "23": 23, #Indicação Barbara
+    "25": 25 #Maria B
 }
 
 # Inicialização dos estados na sessão
